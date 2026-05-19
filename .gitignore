@@ -17,6 +17,9 @@ build
 .env
 .env.local
 
+# Configurações locais do Claude Code
+.claude/settings.local.json
+
 # Cache de geocoding em disco
 server/.cache
 
