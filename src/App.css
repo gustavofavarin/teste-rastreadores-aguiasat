@@ -107,11 +107,47 @@
 }
 
 .card {
+  position: relative;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   padding: 18px 20px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.copy-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.copy-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.copy-btn:hover {
+  background: #f3f4f6;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.copy-btn:focus-visible {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
 }
 
 .card .row {
@@ -120,6 +156,10 @@
   gap: 12px;
   padding: 6px 0;
   font-size: 14px;
+}
+
+.card .row:first-child {
+  padding-right: 40px;
 }
 
 .card .row + .row {
@@ -197,6 +237,14 @@
   }
   .card .row + .row {
     border-top-color: #374151;
+  }
+  .copy-btn {
+    color: #9ca3af;
+  }
+  .copy-btn:hover {
+    background: #374151;
+    color: #f3f4f6;
+    border-color: #4b5563;
   }
   .alert.error {
     background: rgba(185, 28, 28, 0.15);

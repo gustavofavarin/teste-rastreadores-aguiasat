@@ -7,6 +7,7 @@ let tokenCache = null;
 let snapshot = { veiculos: [], updatedAt: 0 };
 let refreshPromise = null;
 
+
 function getEnv(name) {
   const v = process.env[name];
   if (!v) throw new Error(`Variável de ambiente ${name} não definida`);

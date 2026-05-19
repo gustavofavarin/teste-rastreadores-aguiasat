@@ -41,14 +41,38 @@ function formatVoltage(v: number | null) {
   return `${Number(v).toFixed(2)} V`
 }
 
+function buildCardText(r: Result) {
+  const localizacao =
+    r.localizacao ?? (r.lat != null ? `${r.lat}, ${r.lon}` : '—')
+  return [
+    `ID: ${r.id ?? '—'}`,
+    `Atualização: ${formatDateTime(r.ultimaAtualizacao)}`,
+    `Localização: ${localizacao}`,
+    `Voltagem: ${formatVoltage(r.voltagem)}`,
+  ].join('\n')
+}
+
 function App() {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<SearchResponse | null>(null)
   const [searched, setSearched] = useState(false)
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
   const abortRef = useRef<AbortController | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  async function copyCard(key: string, r: Result) {
+    try {
+      await navigator.clipboard.writeText(buildCardText(r))
+      setCopiedKey(key)
+      window.setTimeout(() => {
+        setCopiedKey((current) => (current === key ? null : current))
+      }, 1500)
+    } catch {
+      // ignore — clipboard pode estar indisponível
+    }
+  }
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -132,28 +156,68 @@ function App() {
 
       {!loading && !error && data && data.results.length > 0 && (
         <ul className="results">
-          {data.results.map((r) => (
-            <li key={`${r.idVeiculo}-${r.modulo}`} className="card">
-              <div className="row">
-                <span className="label">ID</span>
-                <span className="value mono">{r.id ?? '—'}</span>
-              </div>
-              <div className="row">
-                <span className="label">Última atualização</span>
-                <span className="value">{formatDateTime(r.ultimaAtualizacao)}</span>
-              </div>
-              <div className="row">
-                <span className="label">Localização</span>
-                <span className="value">
-                  {r.localizacao ?? (r.lat != null ? `${r.lat}, ${r.lon}` : '—')}
-                </span>
-              </div>
-              <div className="row">
-                <span className="label">Voltagem</span>
-                <span className="value">{formatVoltage(r.voltagem)}</span>
-              </div>
-            </li>
-          ))}
+          {data.results.map((r) => {
+            const key = `${r.idVeiculo}-${r.modulo}`
+            const isCopied = copiedKey === key
+            return (
+              <li key={key} className="card">
+                <button
+                  type="button"
+                  className="copy-btn"
+                  onClick={() => copyCard(key, r)}
+                  aria-label="Copiar dados"
+                  title={isCopied ? 'Copiado!' : 'Copiar dados'}
+                >
+                  {isCopied ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  )}
+                </button>
+                <div className="row">
+                  <span className="label">ID</span>
+                  <span className="value mono">{r.id ?? '—'}</span>
+                </div>
+                <div className="row">
+                  <span className="label">Atualização</span>
+                  <span className="value">{formatDateTime(r.ultimaAtualizacao)}</span>
+                </div>
+                <div className="row">
+                  <span className="label">Localização</span>
+                  <span className="value">
+                    {r.localizacao ?? (r.lat != null ? `${r.lat}, ${r.lon}` : '—')}
+                  </span>
+                </div>
+                <div className="row">
+                  <span className="label">Voltagem</span>
+                  <span className="value">{formatVoltage(r.voltagem)}</span>
+                </div>
+              </li>
+            )
+          })}
         </ul>
       )}
 
