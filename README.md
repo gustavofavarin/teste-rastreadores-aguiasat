@@ -49,7 +49,7 @@ Abra http://localhost:5173.
 > ~14k localizações. Enquanto isso, a primeira busca espera o snapshot
 > terminar.
 
-## Build de produção
+## Build de produção (servidor próprio)
 
 ```bash
 npm run build       # gera dist/ (frontend)
@@ -58,6 +58,42 @@ npm start           # roda o backend
 
 Em produção, sirva o `dist/` em um proxy reverso (Nginx, Caddy) que também
 encaminhe `/api/*` para `http://localhost:3001`.
+
+## Deploy na Vercel
+
+O projeto também roda em serverless. O frontend é buildado pela Vercel
+(`npm run build` → `dist/`) e cada arquivo em `api/` vira uma Vercel Function:
+
+- `api/health.js` → `GET /api/health`
+- `api/search.js` → `GET /api/search`
+
+Os módulos em `server/` (`getrak.js`, `dotelematics.js`, `geocode.js`) são
+reaproveitados como bibliotecas pelas functions. O Express em
+`server/index.js` continua existindo só pro fluxo `npm run dev` local.
+
+### Passos
+
+1. **Configurar variáveis de ambiente** no dashboard da Vercel
+   (Settings → Environment Variables), marcando Production, Preview e
+   Development. As mesmas chaves do `.env.example`:
+   `GETRAK_API_KEY`, `GETRAK_USERNAME`, `GETRAK_PASSWORD`,
+   `DOTELEMATICS_APIKEY`, `DOTELEMATICS_USERNAME`,
+   `DOTELEMATICS_PASSWORD`, `NOMINATIM_CONTACT`.
+   **Não** prefixar com `VITE_` (caso contrário entrariam no bundle do
+   browser).
+2. **Deploy**: `vercel --prod` (ou push pra branch conectada).
+
+### Diferenças em serverless
+
+- **Sem preload de snapshot.** A primeira busca após um cold start dispara
+  a carga do snapshot Getrak (~28 páginas) e a do realtime DO. Pode levar
+  alguns segundos. Buscas seguintes usam o cache em memória da instância
+  (5 min de TTL).
+- **Cache de geocoding em memória apenas.** O filesystem é read-only —
+  `geocode.js` detecta `process.env.VERCEL` e ignora a escrita em disco.
+  Cada cold start recomeça do zero.
+- **Timeout.** A busca tem `maxDuration: 60s` em [vercel.json](vercel.json)
+  por causa do throttle do Nominatim (1 req/s × até 50 resultados).
 
 ## Variáveis de ambiente (`.env`)
 
@@ -109,13 +145,18 @@ Use `?force=1` para forçar refresh do snapshot.
 ## Estrutura
 
 ```
-server/
-  index.js     Express + /api/search + /api/health
-  getrak.js    OAuth + snapshot cache + busca em memória
-  geocode.js   Nominatim + cache LRU simples
+api/             Vercel Functions (produção em serverless)
+  health.js
+  search.js
+server/          Express (dev local) + bibliotecas compartilhadas
+  index.js       Express + /api/search + /api/health
+  getrak.js     OAuth + snapshot cache + busca em memória
+  dotelematics.js OAuth + realtime cache + busca
+  geocode.js    Nominatim + cache (disco em dev, memória em serverless)
 src/
-  App.tsx      Tela única
+  App.tsx       Tela única
   App.css
   index.css
   main.tsx
+vercel.json     Config das functions (maxDuration)
 ```

@@ -5,11 +5,15 @@ import { fileURLToPath } from 'node:url';
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/reverse';
 const MIN_INTERVAL_MS = 1100;
 
+// Em serverless (Vercel) o filesystem é somente leitura — desabilita persistência em disco.
+const IS_SERVERLESS = Boolean(process.env.VERCEL);
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(__dirname, '.cache');
 const CACHE_FILE = path.join(CACHE_DIR, 'geocode.json');
 
 function loadCache() {
+  if (IS_SERVERLESS) return new Map();
   try {
     if (fs.existsSync(CACHE_FILE)) {
       const raw = fs.readFileSync(CACHE_FILE, 'utf-8');
@@ -25,6 +29,7 @@ const cache = loadCache();
 let saveTimer = null;
 
 function scheduleSave() {
+  if (IS_SERVERLESS) return;
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
