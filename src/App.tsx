@@ -138,19 +138,22 @@ function App() {
 
       {error && <div className="alert error">{error}</div>}
 
+      {!error && data && data.total === 0 && (
+        <div className="alert warning">Nenhum rastreador encontrado.</div>
+      )}
+
       {!error && data && (
         <div className="meta">
-          {data.total > 0 ? (
+          {data.total > 0 && (
             <>
               {data.total} equipamento(s) encontrado(s)
               {data.truncated && ` — exibindo os ${data.results.length} primeiros`}
             </>
-          ) : (
-            'Nenhum equipamento encontrado.'
           )}
           {data.snapshotUpdatedAt && (
             <span className="snapshot">
-              · Dados atualizados em {formatDateTime(data.snapshotUpdatedAt)}
+              {data.total > 0 ? '· ' : ''}
+              Dados atualizados em {formatDateTime(data.snapshotUpdatedAt)}
             </span>
           )}
           {data.warnings?.length ? (

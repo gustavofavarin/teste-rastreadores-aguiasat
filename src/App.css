@@ -86,6 +86,13 @@
   border: 1px solid #f5c2c4;
 }
 
+.alert.warning {
+  background: #fef7d6;
+  color: #7a5a05;
+  border: 1px solid #f4d97a;
+  font-weight: 500;
+}
+
 .meta {
   font-size: 13px;
   color: #6b7280;
@@ -301,5 +308,10 @@
     background: rgba(193, 55, 60, 0.18);
     color: #f6b8bb;
     border-color: rgba(193, 55, 60, 0.40);
+  }
+  .alert.warning {
+    background: rgba(234, 179, 8, 0.15);
+    color: #fbd462;
+    border-color: rgba(234, 179, 8, 0.40);
   }
 }
