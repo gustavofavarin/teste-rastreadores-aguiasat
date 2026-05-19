@@ -133,7 +133,27 @@ async function refreshSnapshot() {
 
 async function ensureSnapshot({ force = false } = {}) {
   const stale = Date.now() - snapshot.updatedAt > SNAPSHOT_TTL_MS;
-  if (!force && !stale && snapshot.docs.length) return snapshot;
+  const hasData = snapshot.docs.length > 0;
+
+  // Cache fresco — devolve direto.
+  if (!force && !stale && hasData) return snapshot;
+
+  // Stale-while-revalidate: tem dados velhos, devolve eles agora e
+  // atualiza em background. Próxima busca já vai pegar fresco.
+  if (!force && stale && hasData) {
+    if (!refreshPromise) {
+      refreshPromise = refreshSnapshot()
+        .catch((err) =>
+          console.error('[dotelematics bg refresh] erro:', err.message),
+        )
+        .finally(() => {
+          refreshPromise = null;
+        });
+    }
+    return snapshot;
+  }
+
+  // Vazio ou force — precisa esperar a primeira carga.
   if (refreshPromise) return refreshPromise;
   refreshPromise = refreshSnapshot().finally(() => {
     refreshPromise = null;
