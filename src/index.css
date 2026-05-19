@@ -9,7 +9,7 @@
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   color-scheme: light dark;
   color: #1f2937;
-  background-color: #f5f7fb;
+  background-color: #fbf7f7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -24,11 +24,11 @@ body,
 }
 
 body {
-  background: radial-gradient(circle at top, #eef2ff 0%, #f5f7fb 60%);
+  background: radial-gradient(circle at top, #fdecec 0%, #fbf7f7 60%);
 }
 
 a {
-  color: #2563eb;
+  color: #c1373c;
   text-decoration: none;
 }
 a:hover {
@@ -47,12 +47,12 @@ button {
 @media (prefers-color-scheme: dark) {
   :root {
     color: #e5e7eb;
-    background-color: #0f172a;
+    background-color: #1a1213;
   }
   body {
-    background: radial-gradient(circle at top, #1e293b 0%, #0f172a 70%);
+    background: radial-gradient(circle at top, #2a1a1c 0%, #1a1213 70%);
   }
   a {
-    color: #93c5fd;
+    color: #f6a8ab;
   }
 }
