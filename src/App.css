@@ -46,6 +46,9 @@
   .hero-text {
     text-align: center;
   }
+  .hero-logo {
+    display: none;
+  }
 }
 
 .search {
