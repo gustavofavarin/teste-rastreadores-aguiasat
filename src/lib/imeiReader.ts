@@ -110,25 +110,65 @@ function extractImei(text: string): Extraction | null {
   return extractFromAnchor(text) ?? extractFromLine(text);
 }
 
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Não consegui carregar a imagem.'));
+    img.src = src;
+  });
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (b) => (b ? resolve(b) : reject(new Error('Falha ao codificar JPEG.'))),
+      'image/jpeg',
+      quality,
+    );
+  });
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]);
+    };
+    reader.onerror = () => reject(new Error('Falha ao converter base64.'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 /**
- * Reduz tamanho da imagem (long side ≤ 1600px) e codifica em base64 JPEG.
- * Mantém o payload pra Vercel (limite ~4.5MB de body) com folga.
+ * Reduz a imagem (long side ≤ 1200px) e codifica em base64 JPEG.
+ * Otimizado pra celulares com pouca RAM:
+ *  - HTMLImageElement (decodificação preguiçosa, melhor que createImageBitmap)
+ *  - canvas.toBlob (streaming, não cria string gigante)
+ *  - FileReader pra base64 (assíncrono, eficiente)
  */
 async function resizeAndEncode(file: File): Promise<string> {
-  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-  const maxSide = 1600;
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-  const w = Math.round(bitmap.width * scale);
-  const h = Math.round(bitmap.height * scale);
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('Canvas 2D não disponível');
-  ctx.drawImage(bitmap, 0, 0, w, h);
-  bitmap.close();
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-  return dataUrl.split(',')[1];
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    const maxSide = 1200;
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.round(img.naturalWidth * scale);
+    const h = Math.round(img.naturalHeight * scale);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas 2D não disponível.');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const blob = await canvasToBlob(canvas, 0.85);
+    return await blobToBase64(blob);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 async function ocrViaVision(base64: string): Promise<string> {
