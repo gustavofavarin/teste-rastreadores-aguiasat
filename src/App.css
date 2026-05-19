@@ -66,22 +66,25 @@
   background: rgba(193, 55, 60, 0.04);
 }
 
-.camera-btn {
+.search .camera-btn {
   padding: 0 14px;
   border: 1px solid #d1d5db;
   border-radius: 10px;
   background: #fff;
+  color: #374151;
   font-size: 18px;
+  font-weight: 400;
   line-height: 1;
   transition: background 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.camera-btn:hover:not(:disabled) {
+.search .camera-btn:hover:not(:disabled) {
   background: #f3f4f6;
   border-color: #c1373c;
 }
 
-.camera-btn:disabled {
+.search .camera-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -414,12 +417,18 @@
     padding: 24px 16px 64px;
   }
   .search {
-    flex-direction: column;
+    flex-wrap: wrap;
   }
-  .search button {
-    padding: 12px;
+  .search input {
+    flex: 1 1 100%;
   }
-  .camera-btn {
+  .search .camera-btn {
+    flex: 0 0 auto;
+    padding: 12px 22px;
+    font-size: 20px;
+  }
+  .search button[type='submit'] {
+    flex: 1 1 0;
     padding: 12px;
   }
   .card .row {
@@ -498,12 +507,12 @@
     color: #fbd462;
     border-color: rgba(234, 179, 8, 0.40);
   }
-  .camera-btn {
+  .search .camera-btn {
     background: #2a1d1f;
     border-color: #463234;
     color: #f3ecec;
   }
-  .camera-btn:hover:not(:disabled) {
+  .search .camera-btn:hover:not(:disabled) {
     background: #3a2729;
   }
   .imei-capture {
