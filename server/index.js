@@ -1,10 +1,21 @@
 import 'dotenv/config';
 import express from 'express';
-import { searchVehicles, getSnapshotInfo, preloadSnapshot } from './getrak.js';
+import {
+  searchVehicles as searchGetrak,
+  getSnapshotInfo as getGetrakSnapshotInfo,
+  preloadSnapshot as preloadGetrak,
+} from './getrak.js';
+import {
+  searchVehicles as searchDoTelematics,
+  getSnapshotInfo as getDoSnapshotInfo,
+  preloadSnapshot as preloadDoTelematics,
+  hasCredentials as hasDoCredentials,
+} from './dotelematics.js';
 import { reverseGeocode } from './geocode.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
+const GEOCODE_CONCURRENCY = 3;
 
 app.use(express.json());
 
@@ -22,8 +33,72 @@ function stripIdPrefix(modulo) {
   return String(modulo).replace(/^ID/i, '');
 }
 
+function imeiKey(modulo) {
+  return String(modulo ?? '').replace(/^ID/i, '').replace(/\D/g, '');
+}
+
+async function mapLimit(items, limit, mapper) {
+  const out = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      out[i] = await mapper(items[i], i);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+function normalizeRaw(v, fonte) {
+  const lat = typeof v.lat === 'number' ? v.lat : Number(v.lat);
+  const lon = typeof v.lon === 'number' ? v.lon : Number(v.lon);
+  const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
+  return {
+    id: stripIdPrefix(v.modulo),
+    modulo: v.modulo ?? null,
+    placa: v.placa ?? null,
+    apelido: v.apelido ?? null,
+    idVeiculo: v.id_veiculo ?? null,
+    ultimaAtualizacao: parseTimestamp(v.datastatus) ?? parseTimestamp(v.data),
+    voltagem: v.tensao_bateria ?? null,
+    lat: hasCoords ? lat : null,
+    lon: hasCoords ? lon : null,
+    statusOnline: v.status_online ?? null,
+    fonte,
+    _imeiKey: imeiKey(v.modulo),
+  };
+}
+
+function dedupeByImei(items) {
+  const byKey = new Map();
+  for (const it of items) {
+    const key = it._imeiKey;
+    if (!key) {
+      byKey.set(Symbol(), it);
+      continue;
+    }
+    const prev = byKey.get(key);
+    if (!prev) {
+      byKey.set(key, it);
+      continue;
+    }
+    const prevT = prev.ultimaAtualizacao ? new Date(prev.ultimaAtualizacao).getTime() : 0;
+    const curT = it.ultimaAtualizacao ? new Date(it.ultimaAtualizacao).getTime() : 0;
+    if (curT > prevT) byKey.set(key, it);
+  }
+  return [...byKey.values()];
+}
+
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, snapshot: getSnapshotInfo() });
+  res.json({
+    ok: true,
+    snapshots: {
+      getrak: getGetrakSnapshotInfo(),
+      dotelematics: getDoSnapshotInfo(),
+    },
+  });
 });
 
 app.get('/api/search', async (req, res) => {
@@ -34,46 +109,71 @@ app.get('/api/search', async (req, res) => {
     return res.status(400).json({ error: 'Parâmetro "q" é obrigatório.' });
   }
 
-  try {
-    const { results: matches, updatedAt } = await searchVehicles(q, { force });
-
-    const results = await Promise.all(
-      matches.slice(0, 50).map(async (v) => {
-        const lat = typeof v.lat === 'number' ? v.lat : Number(v.lat);
-        const lon = typeof v.lon === 'number' ? v.lon : Number(v.lon);
-        const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
-
-        const localizacao = hasCoords ? await reverseGeocode(lat, lon) : null;
-
-        return {
-          id: stripIdPrefix(v.modulo),
-          modulo: v.modulo ?? null,
-          placa: v.placa ?? null,
-          apelido: v.apelido ?? null,
-          idVeiculo: v.id_veiculo ?? null,
-          ultimaAtualizacao: parseTimestamp(v.datastatus) ?? parseTimestamp(v.data),
-          localizacao,
-          voltagem: v.tensao_bateria ?? null,
-          lat: hasCoords ? lat : null,
-          lon: hasCoords ? lon : null,
-          statusOnline: v.status_online ?? null,
-        };
-      })
-    );
-
-    res.json({
-      results,
-      total: matches.length,
-      truncated: matches.length > results.length,
-      snapshotUpdatedAt: new Date(updatedAt).toISOString(),
-    });
-  } catch (err) {
-    console.error('[/api/search] erro:', err);
-    res.status(500).json({ error: err.message || 'Erro interno.' });
+  const sources = [
+    { fonte: 'Getrak', run: () => searchGetrak(q, { force }) },
+  ];
+  if (hasDoCredentials()) {
+    sources.push({ fonte: 'DO Telematics', run: () => searchDoTelematics(q, { force }) });
   }
+
+  const settled = await Promise.allSettled(sources.map((s) => s.run()));
+
+  const warnings = [];
+  const snapshotTimestamps = [];
+  let merged = [];
+
+  settled.forEach((r, i) => {
+    const { fonte } = sources[i];
+    if (r.status === 'fulfilled') {
+      const { results, updatedAt } = r.value;
+      if (updatedAt) snapshotTimestamps.push(updatedAt);
+      for (const v of results) merged.push(normalizeRaw(v, fonte));
+    } else {
+      const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+      console.error(`[/api/search] ${fonte} falhou:`, msg);
+      warnings.push(`Fonte ${fonte} indisponível: ${msg}`);
+    }
+  });
+
+  if (settled.every((r) => r.status === 'rejected')) {
+    return res
+      .status(502)
+      .json({ error: 'Todas as fontes falharam.', warnings });
+  }
+
+  merged = dedupeByImei(merged);
+  merged.sort((a, b) => {
+    const ta = a.ultimaAtualizacao ? new Date(a.ultimaAtualizacao).getTime() : 0;
+    const tb = b.ultimaAtualizacao ? new Date(b.ultimaAtualizacao).getTime() : 0;
+    return tb - ta;
+  });
+
+  const sliced = merged.slice(0, 50);
+
+  const results = await mapLimit(sliced, GEOCODE_CONCURRENCY, async (item) => {
+    const localizacao =
+      item.lat != null && item.lon != null
+        ? await reverseGeocode(item.lat, item.lon)
+        : null;
+    const { _imeiKey: _drop, ...publicShape } = item;
+    return { ...publicShape, localizacao };
+  });
+
+  const snapshotUpdatedAt = snapshotTimestamps.length
+    ? new Date(Math.max(...snapshotTimestamps)).toISOString()
+    : null;
+
+  res.json({
+    results,
+    total: merged.length,
+    truncated: merged.length > results.length,
+    snapshotUpdatedAt,
+    warnings,
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`Backend Getrak rodando em http://localhost:${PORT}`);
-  preloadSnapshot();
+  console.log(`Backend rodando em http://localhost:${PORT}`);
+  preloadGetrak();
+  preloadDoTelematics();
 });

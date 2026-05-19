@@ -6,20 +6,22 @@ type Result = {
   modulo: string | null
   placa: string | null
   apelido: string | null
-  idVeiculo: number | null
+  idVeiculo: number | string | null
   ultimaAtualizacao: string | null
   localizacao: string | null
   voltagem: number | null
   lat: number | null
   lon: number | null
   statusOnline: number | null
+  fonte: string
 }
 
 type SearchResponse = {
   results: Result[]
   total: number
   truncated: boolean
-  snapshotUpdatedAt: string
+  snapshotUpdatedAt: string | null
+  warnings?: string[]
 }
 
 function formatDateTime(iso: string | null) {
@@ -151,16 +153,32 @@ function App() {
               · Dados atualizados em {formatDateTime(data.snapshotUpdatedAt)}
             </span>
           )}
+          {data.warnings?.length ? (
+            <div className="warnings">
+              {data.warnings.map((w, i) => (
+                <span key={i} className="warning">⚠ {w}</span>
+              ))}
+            </div>
+          ) : null}
         </div>
       )}
 
       {!loading && !error && data && data.results.length > 0 && (
         <ul className="results">
           {data.results.map((r) => {
-            const key = `${r.idVeiculo}-${r.modulo}`
+            const key = `${r.fonte}-${r.idVeiculo}-${r.modulo}`
             const isCopied = copiedKey === key
+            const sourceClass =
+              r.fonte === 'Getrak'
+                ? 'badge badge-getrak'
+                : r.fonte === 'DO Telematics'
+                  ? 'badge badge-do'
+                  : 'badge'
             return (
               <li key={key} className="card">
+                <span className={sourceClass} title={`Fonte: ${r.fonte}`}>
+                  {r.fonte}
+                </span>
                 <button
                   type="button"
                   className="copy-btn"
@@ -221,7 +239,7 @@ function App() {
         </ul>
       )}
 
-      {loading && <div className="loading">Consultando a Getrak…</div>}
+      {loading && <div className="loading">Consultando Getrak e DO Telematics…</div>}
 
       {!loading && !error && !data && searched === false && (
         <p className="hint">Digite o ID/IMEI (ou os últimos dígitos) e clique em Buscar.</p>
