@@ -1,10 +1,60 @@
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/reverse';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const cache = new Map();
-const MAX_CACHE = 500;
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/reverse';
+const MIN_INTERVAL_MS = 1100;
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CACHE_DIR = path.join(__dirname, '.cache');
+const CACHE_FILE = path.join(CACHE_DIR, 'geocode.json');
+
+function loadCache() {
+  try {
+    if (fs.existsSync(CACHE_FILE)) {
+      const raw = fs.readFileSync(CACHE_FILE, 'utf-8');
+      return new Map(Object.entries(JSON.parse(raw)));
+    }
+  } catch (err) {
+    console.error('[geocode] falha ao ler cache em disco:', err.message);
+  }
+  return new Map();
+}
+
+const cache = loadCache();
+let saveTimer = null;
+
+function scheduleSave() {
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => {
+    saveTimer = null;
+    try {
+      fs.mkdirSync(CACHE_DIR, { recursive: true });
+      const obj = Object.fromEntries(cache);
+      fs.writeFileSync(CACHE_FILE, JSON.stringify(obj));
+    } catch (err) {
+      console.error('[geocode] falha ao salvar cache:', err.message);
+    }
+  }, 2000);
+}
 
 function cacheKey(lat, lon) {
-  return `${lat.toFixed(5)},${lon.toFixed(5)}`;
+  return `${lat.toFixed(4)},${lon.toFixed(4)}`;
+}
+
+let lastRequestAt = 0;
+let queue = Promise.resolve();
+
+function throttledFetch(url, opts) {
+  const run = async () => {
+    const wait = Math.max(0, lastRequestAt + MIN_INTERVAL_MS - Date.now());
+    if (wait > 0) await new Promise((r) => setTimeout(r, wait));
+    lastRequestAt = Date.now();
+    return fetch(url, opts);
+  };
+  const result = queue.then(run, run);
+  queue = result.catch(() => {});
+  return result;
 }
 
 export async function reverseGeocode(lat, lon) {
@@ -22,19 +72,21 @@ export async function reverseGeocode(lat, lon) {
   url.searchParams.set('zoom', '18');
 
   try {
-    const res = await fetch(url.toString(), {
+    const res = await throttledFetch(url.toString(), {
       headers: {
         'User-Agent': 'teste-rastreador-getrak/1.0 (suporte@aguiasatsistemas.com.br)',
       },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      if (res.status === 429) {
+        console.warn('[geocode] Nominatim 429 (rate limit) — aumente o intervalo ou troque o provedor');
+      }
+      return null;
+    }
     const data = await res.json();
     const address = formatAddress(data);
-    if (cache.size >= MAX_CACHE) {
-      const firstKey = cache.keys().next().value;
-      cache.delete(firstKey);
-    }
     cache.set(key, address);
+    scheduleSave();
     return address;
   } catch {
     return null;

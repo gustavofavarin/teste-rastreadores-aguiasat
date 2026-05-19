@@ -15,7 +15,7 @@ import { reverseGeocode } from './geocode.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
-const GEOCODE_CONCURRENCY = 3;
+const GEOCODE_CONCURRENCY = 1;
 
 app.use(express.json());
 
@@ -31,10 +31,6 @@ function parseTimestamp(raw) {
 function stripIdPrefix(modulo) {
   if (!modulo) return null;
   return String(modulo).replace(/^ID/i, '');
-}
-
-function imeiKey(modulo) {
-  return String(modulo ?? '').replace(/^ID/i, '').replace(/\D/g, '');
 }
 
 async function mapLimit(items, limit, mapper) {
@@ -67,28 +63,7 @@ function normalizeRaw(v, fonte) {
     lon: hasCoords ? lon : null,
     statusOnline: v.status_online ?? null,
     fonte,
-    _imeiKey: imeiKey(v.modulo),
   };
-}
-
-function dedupeByImei(items) {
-  const byKey = new Map();
-  for (const it of items) {
-    const key = it._imeiKey;
-    if (!key) {
-      byKey.set(Symbol(), it);
-      continue;
-    }
-    const prev = byKey.get(key);
-    if (!prev) {
-      byKey.set(key, it);
-      continue;
-    }
-    const prevT = prev.ultimaAtualizacao ? new Date(prev.ultimaAtualizacao).getTime() : 0;
-    const curT = it.ultimaAtualizacao ? new Date(it.ultimaAtualizacao).getTime() : 0;
-    if (curT > prevT) byKey.set(key, it);
-  }
-  return [...byKey.values()];
 }
 
 app.get('/api/health', (_req, res) => {
@@ -141,7 +116,6 @@ app.get('/api/search', async (req, res) => {
       .json({ error: 'Todas as fontes falharam.', warnings });
   }
 
-  merged = dedupeByImei(merged);
   merged.sort((a, b) => {
     const ta = a.ultimaAtualizacao ? new Date(a.ultimaAtualizacao).getTime() : 0;
     const tb = b.ultimaAtualizacao ? new Date(b.ultimaAtualizacao).getTime() : 0;
@@ -155,8 +129,7 @@ app.get('/api/search', async (req, res) => {
       item.lat != null && item.lon != null
         ? await reverseGeocode(item.lat, item.lon)
         : null;
-    const { _imeiKey: _drop, ...publicShape } = item;
-    return { ...publicShape, localizacao };
+    return { ...item, localizacao };
   });
 
   const snapshotUpdatedAt = snapshotTimestamps.length
