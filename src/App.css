@@ -5,14 +5,29 @@
 }
 
 .hero {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
   margin-bottom: 32px;
+}
+
+.hero-logo {
+  width: 138px;
+  height: 138px;
+  object-fit: contain;
+  flex-shrink: 0;
+  mix-blend-mode: multiply;
+}
+
+.hero-text {
+  text-align: right;
 }
 
 .hero h1 {
   font-size: 28px;
   font-weight: 600;
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   letter-spacing: -0.5px;
 }
 
@@ -20,6 +35,17 @@
   margin: 0;
   color: #6b7280;
   font-size: 15px;
+}
+
+@media (max-width: 540px) {
+  .hero {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  .hero-text {
+    text-align: center;
+  }
 }
 
 .search {
@@ -255,6 +281,9 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  .hero-logo {
+    mix-blend-mode: normal;
+  }
   .badge-getrak {
     background: rgba(96, 165, 250, 0.18);
     color: #93c5fd;

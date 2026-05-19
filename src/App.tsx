@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
+import logoUrl from './assets/logo.png'
 
 type Result = {
   id: string | null
@@ -116,8 +117,11 @@ function App() {
   return (
     <div className="app">
       <header className="hero">
-        <h1>Teste de Rastreador</h1>
-        <p>ÁguiaSat Sistemas de Rastreamento.</p>
+        <div className="hero-text">
+          <h1>Teste de Rastreador</h1>
+          <p>ÁguiaSat Sistemas de Rastreamento.</p>
+        </div>
+        <img src={logoUrl} alt="ÁguiaSat" className="hero-logo" />
       </header>
 
       <form className="search" onSubmit={runSearch}>
