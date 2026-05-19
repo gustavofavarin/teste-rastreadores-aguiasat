@@ -78,7 +78,7 @@ Mesmo padrão do `server/getrak.js`, com refresh extra:
 | URL     | `https://api-gateway.dotelematics.com/user/me`       |
 | headers | `apikey`, `Authorization: Bearer <token>`            |
 
-Devolve um JSON onde nos interessa só `companyId._id` (no nosso caso `63c050cb3c457b0016e705cd` = "AGUIASAT SISTEMAS DE RASTREAMENTO"). Vou chamar uma única vez no primeiro warm-up e cachear na memória do processo; serve como filtro no realtime.
+Devolve um JSON onde nos interessa só `companyId._id` (no nosso caso `<COMPANY_ID>` = "<NOME_EMPRESA>"). Vou chamar uma única vez no primeiro warm-up e cachear na memória do processo; serve como filtro no realtime.
 
 ---
 
@@ -111,25 +111,25 @@ Array puro de objetos:
 
 ```jsonc
 {
-  "_id": "6712ba2e652db510a910a490",      // ObjectId do tracker
-  "did": 355322094280939,                  // IMEI numérico
-  "name": "QIB0G60 - RODRIGO MARTINELLO BACK",
+  "_id": "0000aaaa0000bbbb0000cccc",      // ObjectId do tracker
+  "did": 123456789012345,                  // IMEI numérico
+  "name": "ABC1D23 - NOME EXEMPLO",
   "canBeBlocked": false,
   "vehicle": {
-    "_id": "6712ba7c0c38013361427a83",
-    "name": "QIB0G60 - RODRIGO MARTINELLO BACK",
-    "plate": "QIB0G60",
+    "_id": "0000dddd0000eeee0000ffff",
+    "name": "ABC1D23 - NOME EXEMPLO",
+    "plate": "ABC1D23",
     "type": { "_id": "...", "icon": "mat_outline:directions_car" },
     "fleets": []
   },
-  "company": { "_id": "63c050cb...", "name": "AGUIASAT SISTEMAS DE RASTREAMNETO" },
+  "company": { "_id": "<COMPANY_ID>", "name": "<NOME_EMPRESA>" },
   "driver":  { "_id": "...", "name": "" },
   "packet": {
     "DID":              0,                              // pode vir zerado; preferir doc.did
     "GPS_TIME":         "2026-05-19T13:04:03Z",         // ISO UTC — última posição do GPS
     "SERVER_TIME":      "2026-05-19T13:04:05.08Z",      // ISO UTC — recepção no servidor
-    "LATITUDE":         -28.665518333333335,
-    "LONGITUDE":        -49.33813888888889,
+    "LATITUDE":         -23.5505,
+    "LONGITUDE":        -46.6333,
     "VEHICLE_VOLTAGE":  12090,                           // milivolts (12090 mV = 12.09 V)
     "IGNITION_ON":      false,
     "SPEED":            0,
@@ -141,14 +141,14 @@ Array puro de objetos:
     "EVENT_TYPE":       "POSITION",
     "SERIAL_CODE":      "",
     "PACKAGE":          "<hex bruto — ignorar>",
-    "ADDRESS_ROAD":     "Rua Xavante",
+    "ADDRESS_ROAD":     "Rua Exemplo",
     "ADDRESS_NUMBER":   "",
     "ADDRESS_DISTRICT": "",
-    "ADDRESS_SUBURB":   "Argentina",
-    "ADDRESS_CITY":     "Criciúma",
-    "ADDRESS_STATE":    "Santa Catarina",
+    "ADDRESS_SUBURB":   "Bairro Exemplo",
+    "ADDRESS_CITY":     "Cidade Exemplo",
+    "ADDRESS_STATE":    "Estado Exemplo",
     "ADDRESS_COUNTRY":  "Brasil",
-    "ADDRESS_POSTCODE": "88813-600"
+    "ADDRESS_POSTCODE": "00000-000"
   }
 }
 ```
@@ -214,7 +214,7 @@ Em um empate de timestamps (improvável), arbitrariamente mantém a Getrak (font
 1. ~~Heurística de `statusOnline`~~ — proposta `(now - SERVER_TIME) < 15 min ⇒ ONLINE`. **Confirma o limiar antes de eu implementar?**
 2. ~~TTL do snapshot~~ — proponho **5 min**, igual Getrak. Snapshot agora é só 1031 trackers (~600 KB JSON) — leve.
 3. ~~Voltagem em mV vs V~~ — vou normalizar tudo para V (`/1000`). OK?
-4. **Filtro por empresa** — vou usar `?companies=<companyId>` com o `companyId` do `/user/me` cacheado uma única vez. Isso restringe o snapshot à AGUIASAT (1031 vs 5336). **Confirma que é o comportamento desejado?** Alternativa: trazer todos os 5336 (inclui empresas-clientes/revenda).
+4. **Filtro por empresa** — vou usar `?companies=<companyId>` com o `companyId` do `/user/me` cacheado uma única vez. Isso restringe o snapshot à `<NOME_EMPRESA>` (1031 vs 5336). **Confirma que é o comportamento desejado?** Alternativa: trazer todos os 5336 (inclui empresas-clientes/revenda).
 5. **Token & refresh** — cache em memória, refresh proativo perto do `exp` do JWT, fallback de re-login no 401. Sem novas dependências (parsing manual do JWT com `Buffer.from(parts[1], 'base64url')`).
 6. ~~Filtros server-side ignorados~~ — confirmado de novo: `search`/`searchKey`/`limit` não filtram nem no gateway. Snapshot local é o caminho.
 7. ~~`Bearer` vs token cru~~ — no gateway o `Bearer` é definitivo.

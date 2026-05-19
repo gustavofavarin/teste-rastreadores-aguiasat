@@ -14,7 +14,7 @@ partir do **ID/IMEI** (típico fluxo de validação de instalação por técnico
 
 ### Por que existe um cache de snapshot no servidor
 
-O scope `PublicoCliente` do usuário `int@aguiasat` **não** dá acesso ao
+O scope `PublicoCliente` do usuário `<GETRAK_USERNAME>` **não** dá acesso ao
 endpoint `/v0.2/equipamentos/integracao` (401). O único endpoint disponível
 para essa conta é `GET /v0.1/localizacoes`, que **não aceita filtro por IMEI
 no servidor**. Por isso o backend baixa todas as páginas

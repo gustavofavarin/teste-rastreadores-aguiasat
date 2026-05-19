@@ -74,7 +74,7 @@ export async function reverseGeocode(lat, lon) {
   try {
     const res = await throttledFetch(url.toString(), {
       headers: {
-        'User-Agent': 'teste-rastreador-getrak/1.0 (suporte@aguiasatsistemas.com.br)',
+        'User-Agent': 'teste-rastreador/1.0 (contato@example.com)',
       },
     });
     if (!res.ok) {
