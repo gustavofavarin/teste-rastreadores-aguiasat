@@ -117,7 +117,7 @@ function App() {
     <div className="app">
       <header className="hero">
         <h1>Teste de Rastreador</h1>
-        <p>Busca pelo ID/IMEI do equipamento.</p>
+        <p>ÁguiaSat Sistemas de Rastreamento.</p>
       </header>
 
       <form className="search" onSubmit={runSearch}>

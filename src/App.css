@@ -141,15 +141,15 @@
 }
 
 .badge-getrak {
-  background: #fdecec;
-  color: #8a1f24;
-  border-color: #f5c2c4;
+  background: #e8f1fb;
+  color: #2563eb;
+  border-color: #bfd6f5;
 }
 
 .badge-do {
-  background: #fff1f0;
-  color: #9a3a1d;
-  border-color: #fbcdc4;
+  background: #dde6f3;
+  color: #1e3a8a;
+  border-color: #a8bedf;
 }
 
 .copy-btn {
@@ -249,14 +249,14 @@
 
 @media (prefers-color-scheme: dark) {
   .badge-getrak {
-    background: rgba(193, 55, 60, 0.20);
-    color: #f6b8bb;
-    border-color: rgba(193, 55, 60, 0.40);
+    background: rgba(96, 165, 250, 0.18);
+    color: #93c5fd;
+    border-color: rgba(96, 165, 250, 0.40);
   }
   .badge-do {
-    background: rgba(218, 105, 75, 0.18);
-    color: #f4b8a8;
-    border-color: rgba(218, 105, 75, 0.40);
+    background: rgba(30, 64, 175, 0.25);
+    color: #bfd6f5;
+    border-color: rgba(30, 64, 175, 0.50);
   }
   .meta .warning {
     color: #f0b97a;
