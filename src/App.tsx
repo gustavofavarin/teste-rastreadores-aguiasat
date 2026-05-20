@@ -3,6 +3,7 @@ import './App.css'
 import logoUrl from './assets/logo.png'
 import { ImeiCapture } from './components/ImeiCapture'
 import { readImei, type ImeiReadResult } from './lib/imeiReader'
+import { Analytics } from "@vercel/analytics/next"
 
 type Result = {
   id: string | null
