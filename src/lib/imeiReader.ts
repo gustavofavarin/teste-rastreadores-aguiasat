@@ -29,6 +29,19 @@ export function isImeiValid(s: string | null | undefined): boolean {
   return sum % 10 === 0;
 }
 
+// Suntech (ST310U etc.) imprime o IMEI em três blocos separados por hífens:
+//   "IMEI NO. : 35642-807566793-4"
+// O cadastro/busca usa só os 9 dígitos do meio (no exemplo, "807566793"),
+// então quando detectamos esse formato 5-9-1 devolvemos apenas o miolo.
+// Lookarounds garantem que não estamos dentro de um número maior.
+const SUNTECH_REGEX = /(?<!\d)\d{5}\s*-\s*(\d{9})\s*-\s*\d(?!\d)/;
+
+function extractSuntechSerial(text: string): Extraction | null {
+  const match = text.match(SUNTECH_REGEX);
+  if (!match) return null;
+  return { value: match[1] };
+}
+
 function extractFromAnchor(text: string): Extraction | null {
   const upper = text.toUpperCase();
   const match = upper.match(ANCHOR_REGEX);
@@ -107,7 +120,7 @@ function extractFromLine(text: string): Extraction | null {
 }
 
 function extractImei(text: string): Extraction | null {
-  return extractFromAnchor(text) ?? extractFromLine(text);
+  return extractSuntechSerial(text) ?? extractFromAnchor(text) ?? extractFromLine(text);
 }
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -223,6 +236,6 @@ export async function readImei(file: File): Promise<ImeiReadResult> {
   return {
     ok: false,
     error:
-      'Texto detectado mas não encontrei um IMEI válido. Verifique se a etiqueta com "IMEI", "UIN" ou "UID" está visível.',
+      'Texto detectado mas não encontrei um IMEI válido. Verifique se a etiqueta com "IMEI", "UIN", "UID" ou o número no formato Suntech (XXXXX-XXXXXXXXX-X) está visível.',
   };
 }
