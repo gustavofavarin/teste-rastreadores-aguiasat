@@ -3,7 +3,7 @@ import './App.css'
 import logoUrl from './assets/logo.png'
 import { ImeiCapture } from './components/ImeiCapture'
 import { readImei, type ImeiReadResult } from './lib/imeiReader'
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react"
 
 type Result = {
   id: string | null
@@ -392,6 +392,7 @@ function App() {
       {!loading && !error && !data && searched === false && (
         <p className="hint">Digite o ID/IMEI (ou os últimos dígitos) e clique em Buscar.</p>
       )}
+      <Analytics />
     </div>
   )
 }
