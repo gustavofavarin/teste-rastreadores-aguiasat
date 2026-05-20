@@ -1,9 +1,5 @@
 const VISION_URL = 'https://vision.googleapis.com/v1/images:annotate';
 
-export function hasVisionKey() {
-  return Boolean(process.env.GOOGLE_VISION_API_KEY);
-}
-
 /**
  * Chama a Google Cloud Vision API (TEXT_DETECTION) com a imagem em base64
  * e devolve o texto detectado (ou string vazia se nada foi reconhecido).

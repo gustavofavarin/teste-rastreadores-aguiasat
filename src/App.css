@@ -145,47 +145,6 @@
   padding: 6px 8px;
 }
 
-.imei-alts-label {
-  color: #6b7280;
-  font-size: 12.5px;
-}
-
-.imei-alts-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.imei-alt {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 10px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  background: #fff;
-  text-align: left;
-  font: inherit;
-  transition: border-color 0.15s, background 0.15s;
-}
-
-.imei-alt:hover {
-  border-color: #c1373c;
-  background: #fdecec;
-}
-
-.imei-alt-value {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 14px;
-}
-
-.imei-alt-source {
-  color: #6b7280;
-  font-size: 12px;
-}
-
 .imei-clear {
   align-self: flex-start;
   margin-top: 4px;
@@ -556,19 +515,8 @@
   }
   .imei-status,
   .imei-source,
-  .imei-alts-label,
-  .imei-alt-source,
   .imei-clear {
     color: #b5a4a5;
-  }
-  .imei-alt {
-    background: #2a1d1f;
-    border-color: #463234;
-    color: #f3ecec;
-  }
-  .imei-alt:hover {
-    background: rgba(193, 55, 60, 0.15);
-    border-color: rgba(193, 55, 60, 0.50);
   }
   .imei-warning {
     background: rgba(234, 179, 8, 0.15);

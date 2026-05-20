@@ -1,6 +1,5 @@
 const BASE_URL = 'https://api-gateway.dotelematics.com';
 const SNAPSHOT_TTL_MS = 5 * 60 * 1000;
-const ONLINE_WINDOW_MS = 15 * 60 * 1000;
 
 let tokenCache = null; // { accessToken, refreshToken, expiresAt }
 let snapshot = { docs: [], updatedAt: 0 };
@@ -165,13 +164,6 @@ function normalizeDigits(s) {
   return String(s ?? '').replace(/\D/g, '');
 }
 
-function deriveOnline(serverTimeIso) {
-  if (!serverTimeIso) return null;
-  const t = new Date(serverTimeIso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Date.now() - t < ONLINE_WINDOW_MS ? 1 : 0;
-}
-
 function mapDocToGetrakLike(doc) {
   const packet = doc?.packet ?? null;
   const did = String(doc?.did ?? '');
@@ -181,14 +173,12 @@ function mapDocToGetrakLike(doc) {
   return {
     modulo: did,
     placa: doc?.vehicle?.plate?.trim() || null,
-    apelido: doc?.vehicle?.name?.trim() || doc?.name?.trim() || null,
     id_veiculo: doc?.vehicle?._id ?? null,
     datastatus: packet?.GPS_TIME ?? packet?.SERVER_TIME ?? null,
     data: null,
     lat,
     lon,
     tensao_bateria: voltagem,
-    status_online: deriveOnline(packet?.SERVER_TIME ?? packet?.GPS_TIME),
   };
 }
 

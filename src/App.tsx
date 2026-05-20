@@ -8,15 +8,12 @@ import { Analytics } from "@vercel/analytics/react"
 type Result = {
   id: string | null
   modulo: string | null
-  placa: string | null
-  apelido: string | null
   idVeiculo: number | string | null
   ultimaAtualizacao: string | null
   localizacao: string | null
   voltagem: number | null
   lat: number | null
   lon: number | null
-  statusOnline: number | null
   fonte: string
 }
 
