@@ -166,6 +166,21 @@ function App() {
     }
   }
 
+  function shakeCard(el: Element | null) {
+    if (!(el instanceof HTMLElement)) return
+    el.animate(
+      [
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-2px)' },
+        { transform: 'translateX(2px)' },
+        { transform: 'translateX(-1px)' },
+        { transform: 'translateX(1px)' },
+        { transform: 'translateX(0)' },
+      ],
+      { duration: 260, easing: 'ease-out' },
+    )
+  }
+
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
@@ -318,14 +333,26 @@ function App() {
                   ? 'badge badge-do'
                   : 'badge'
             return (
-              <li key={key} className="card">
+              <li
+                key={key}
+                className="card"
+                onClick={(e) => {
+                  if (window.getSelection()?.toString()) return
+                  shakeCard(e.currentTarget)
+                  copyCard(key, r)
+                }}
+              >
                 <span className={sourceClass} title={`Fonte: ${r.fonte}`}>
                   {r.fonte}
                 </span>
                 <button
                   type="button"
                   className="copy-btn"
-                  onClick={() => copyCard(key, r)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    shakeCard(e.currentTarget.closest('.card'))
+                    copyCard(key, r)
+                  }}
                   aria-label="Copiar dados"
                   title={isCopied ? 'Copiado!' : 'Copiar dados'}
                 >

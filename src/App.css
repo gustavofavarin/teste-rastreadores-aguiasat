@@ -307,6 +307,14 @@
   border-radius: 12px;
   padding: 18px 20px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.card:hover {
+  background: #fafafa;
+  border-color: #dcdfe3;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .badge {
@@ -500,6 +508,11 @@
   .card {
     background: #2a1d1f;
     border-color: #463234;
+    box-shadow: none;
+  }
+  .card:hover {
+    background: #321f22;
+    border-color: #553a3d;
     box-shadow: none;
   }
   .card .value {
