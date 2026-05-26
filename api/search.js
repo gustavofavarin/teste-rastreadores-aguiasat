@@ -1,3 +1,4 @@
+import { waitUntil } from '@vercel/functions';
 import { runSearch } from '../server/shared.js';
 
 export default async function handler(req, res) {
@@ -9,7 +10,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const result = await runSearch({ q, force });
+  const result = await runSearch({ q, force, waitUntil });
   if (!result.ok) {
     res.status(502).json({ error: 'Todas as fontes falharam.', warnings: result.warnings });
     return;

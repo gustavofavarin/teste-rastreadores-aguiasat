@@ -130,7 +130,7 @@ async function refreshSnapshot() {
   return snapshot;
 }
 
-async function ensureSnapshot({ force = false } = {}) {
+async function ensureSnapshot({ force = false, waitUntil } = {}) {
   const stale = Date.now() - snapshot.updatedAt > SNAPSHOT_TTL_MS;
   const hasData = snapshot.docs.length > 0;
 
@@ -139,6 +139,8 @@ async function ensureSnapshot({ force = false } = {}) {
 
   // Stale-while-revalidate: tem dados velhos, devolve eles agora e
   // atualiza em background. Próxima busca já vai pegar fresco.
+  // No Vercel, sem waitUntil, o lambda congela após o response e o
+  // refresh nunca completa — snapshot ficaria travado pra sempre.
   if (!force && stale && hasData) {
     if (!refreshPromise) {
       refreshPromise = refreshSnapshot()
@@ -148,6 +150,7 @@ async function ensureSnapshot({ force = false } = {}) {
         .finally(() => {
           refreshPromise = null;
         });
+      if (typeof waitUntil === 'function') waitUntil(refreshPromise);
     }
     return snapshot;
   }
@@ -182,11 +185,11 @@ function mapDocToGetrakLike(doc) {
   };
 }
 
-export async function searchVehicles(query, { force = false } = {}) {
+export async function searchVehicles(query, { force = false, waitUntil } = {}) {
   if (!hasCredentials()) {
     throw new Error('Credenciais DO Telematics ausentes');
   }
-  await ensureSnapshot({ force });
+  await ensureSnapshot({ force, waitUntil });
   const raw = String(query ?? '').trim();
   if (!raw) return { results: [], updatedAt: snapshot.updatedAt };
 

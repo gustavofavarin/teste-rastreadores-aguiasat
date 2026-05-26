@@ -57,12 +57,12 @@ function normalizeRaw(v, fonte) {
   };
 }
 
-export async function runSearch({ q, force }) {
+export async function runSearch({ q, force, waitUntil }) {
   const sources = [
-    { fonte: 'Getrak', run: () => searchGetrak(q, { force }) },
+    { fonte: 'Getrak', run: () => searchGetrak(q, { force, waitUntil }) },
   ];
   if (hasDoCredentials()) {
-    sources.push({ fonte: 'DO Telematics', run: () => searchDoTelematics(q, { force }) });
+    sources.push({ fonte: 'DO Telematics', run: () => searchDoTelematics(q, { force, waitUntil }) });
   }
 
   const settled = await Promise.allSettled(sources.map((s) => s.run()));
